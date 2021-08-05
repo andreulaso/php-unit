@@ -30,107 +30,98 @@ function mySortForKey(array &$a, string $b): void {
 
 function importXml(string $a): void {
 	
-	if (file_exists($a)) {
+	if (!file_exists($a)) throw new InvalidArgumentException("<pre>Не удалось открыть файл $a.");	 
 		
 		$xml = simplexml_load_file($a);
 
-		if ($xml !== FALSE) {
+		if ($xml === FALSE)	throw new Exception("<pre>Не удалось прочитать файл $a.");	 
 
-			if ($xml->Товар->count() > 0){
+		if ($xml->Товар->count() === 0) throw new Exception("<pre>Не найдены товары");
+	
+			$con = mysqli_connect('localhost', 'root', '140905', 'test_samson');
+
+			if (mysqli_connect_errno($con))} else throw new Exception("<pre>Failed to connect:" . mysqli_connect_error());
+
+				mysqli_set_charset($con, "utf8");
+
+	foreach ($xml->Товар as $product) {
+
+		$code = $product->attributes()->Код;
+		$name = $product->attributes()->Название;
+		
+		if (isset($code, $name)){	
+
+			$sql = "INSERT INTO `a_product`(`product_code`,`product_name`) 
+					VALUES ('{$code}', '{$name}')";
 			
-				$con = mysqli_connect('localhost' ,'root' ,'140905' ,'test_samson');
+			if (mysqli_query($con, $sql)){ 						
+		
+				foreach ($product->Цена as $price) {
+					
+					$type = $price->attributes()->Тип;
+					
+					if (isset($type) && !empty((string)$price)){
 
-				if (!mysqli_connect_errno($con)){
-
-					mysqli_set_charset($con, "utf8");
-
-					foreach ($xml->Товар as $product) {
-
-						$code = $product->attributes()->Код;
-						$name = $product->attributes()->Название;
+						$sql = "INSERT INTO `a_price`(`product_code`,`price_type`,`price`) 
+								VALUES ('{$code}', '{$type}', '{$price}')";  
 						
-						if (isset($code, $name)){	
-
-							$sql = "INSERT INTO `a_product`(`product_code`,`product_name`) 
-									VALUES ('{$code}', '{$name}')";
+						if (!mysqli_query($con, $sql)){
 							
-							if (mysqli_query($con, $sql)){ 						
+							echo ("<pre>Не удалось добавить цену $type для товара $name. " . mysqli_error($con));
+						}
 						
-								foreach ($product->Цена as $price) {
-									
-									$type = $price->attributes()->Тип;
-									
-									if (isset($type) && !empty((string)$price)){
+					} else echo("<pre>Не указан тип цены или цена для товара $name.");
+				}
 
-										$sql = "INSERT INTO `a_price`(`product_code`,`price_type`,`price`) 
-												VALUES ('{$code}', '{$type}', '{$price}')";  
-										
-										if (!mysqli_query($con, $sql)){
-											
-											echo ("<pre>Не удалось добавить цену $type для товара $name. " . mysqli_error($con));
-										}
-										
-									} else echo("<pre>Не указан тип цены или цена для товара $name.");
-								}
+				foreach ($product->Свойства->children() as $property) {
+					
+					$property_type = $property->getName();
+					
+					$property_unit = $property->attributes()->ЕдИзм;
+					
+					if (isset($property_type) && !empty((string)$property)){
 
-								foreach ($product->Свойства->children() as $property) {
-									
-									$property_type = $property->getName();
-									
-									$property_unit = $property->attributes()->ЕдИзм;
-									
-									if (isset($property_type) && !empty((string)$property)){
-
-										$sql = "INSERT INTO `a_property`(`product_code`,`property_type`,`property_unit`,`property_value`) 
-												VALUES ('{$code}', '{$property_type}', '{$property_unit}', '{$property}')";  
-										
-										if (!mysqli_query($con, $sql)){
-											
-											echo ("<pre>Не удалось добавить свойство $property_type для товара $name." . mysqli_error($con));
-										}
-										
-									} else echo("<pre>Не удалось добавить свойства для товара $name.");	
-									
-								}		
-
-								foreach ($product->Разделы->children() as $value) {
-									
-									$category = strval($value);
-									
-									if (!empty($category)){
-
-										$sql = "SELECT `category_id` FROM `test_samson`.`a_category` 
-												WHERE category_name = '{$category}' LIMIT 1"; 	
-
-										$id = mysqli_fetch_array( mysqli_query($con, $sql));
-
-										if ($id){
-
-											$sql = "INSERT INTO `a_product_category`(`product_code`,`category_id`) 
-													VALUES ('{$code}', '{$id['category_id']}')";
-
-											if (!mysqli_query($con, $sql)){
-												
-												echo ("<pre>Не удалось добавить раздел $category для товара $name." . mysqli_error($con));
-											}
-										
-										} else echo ("<pre>Раздела $category не существует." . mysqli_error($con));									
-
-									} else echo("<pre>Не удалось добавить раздел для товара $name.");										
-
-								}	
+						$sql = "INSERT INTO `a_property`(`product_code`,`property_type`,`property_unit`,`property_value`) 
+								VALUES ('{$code}', '{$property_type}', '{$property_unit}', '{$property}')";  
+						
+						if (!mysqli_query($con, $sql)){
 							
-							} else echo("<pre>Не удалось добавить товар $name. " . mysqli_error($con));		
+							echo ("<pre>Не удалось добавить свойство $property_type для товара $name." . mysqli_error($con));
+						}
 						
-						} else echo("<pre>Не указан код или название товара");					
+					} else echo("<pre>Не удалось добавить свойства для товара $name.");	
+					
+				}		
 
-					}
-				
-				} else throw new Exception("<pre>Failed to connect:" . mysqli_connect_error());
+				foreach ($product->Разделы->children() as $value) {
+					
+					$category = strval($value);
+					
+					if (!empty($category)){
 
-			} else throw new Exception("<pre>Не найдены товары");
+						$sql = "SELECT `category_id` FROM `test_samson`.`a_category` 
+								WHERE category_name = '{$category}' LIMIT 1"; 	
 
-		} else throw new Exception("<pre>Не удалось прочитать файл $a.");	 		
+						$id = mysqli_fetch_array( mysqli_query($con, $sql));
 
-	} else throw new InvalidArgumentException("<pre>Не удалось открыть файл $a.");		
+						if ($id){
+
+							$sql = "INSERT INTO `a_product_category`(`product_code`,`category_id`) 
+									VALUES ('{$code}', '{$id['category_id']}')";
+
+							if (!mysqli_query($con, $sql)){
+								
+								echo ("<pre>Не удалось добавить раздел $category для товара $name." . mysqli_error($con));
+							}
+						
+						} else echo ("<pre>Раздела $category не существует." . mysqli_error($con));									
+
+					} else echo("<pre>Не удалось добавить раздел для товара $name.");										
+
+				}	
+			
+			} else echo("<pre>Не удалось добавить товар $name. " . mysqli_error($con));		
+		
+		} else echo("<pre>Не указан код или название товара");					
+	}		
 }
