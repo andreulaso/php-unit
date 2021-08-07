@@ -198,11 +198,12 @@ function exportXml(string $a, string $b): void {
 				foreach ($products as $product_code) {
 					
 					$product = $xml->addChild('Товар');					
-					$product->addAttribute('Код', $product_code[0]);					
-					
-					$childs	=	['Цена'=>'`price_type`,`price` FROM `a_price`',
-								 'Свойства'=>'`property_type`,`property_unit`,`property_value` FROM `a_property`',
-								 'Разделы'=>'`category_id` FROM `a_product_category`'
+					$product->addAttribute('Код', $product_code[0]);	
+
+					$childs	=	['Название'=>'`product_name` FROM `a_product`',
+								'Цена'=>'`price_type`,`price` FROM `a_price`',
+								'Свойства'=>'`property_type`,`property_unit`,`property_value` FROM `a_property`',
+								'Разделы'=>'`category_id` FROM `a_product_category`'
 								];
 
 					foreach ($childs as $name => $sql) {
@@ -215,9 +216,13 @@ function exportXml(string $a, string $b): void {
 
 							while ($row = $result->fetch_assoc()) {
 							
-								if ($name == 'Цена'){
+								if ($name == 'Название'){
 									
-									$child = $product->addChild('Цена', $row['price']);
+									$product->addAttribute($name, $row['product_name']);
+								
+								} else if ($name == 'Цена'){
+									
+									$child = $product->addChild($name, $row['price']);
 									
 									$child->addAttribute('Тип', $row['price_type']);
 								
@@ -256,7 +261,7 @@ function exportXml(string $a, string $b): void {
 
 //importXml('2.xml');
 
-exportXml('export.xml', 'Принтеры и МФУ');
+//exportXml('export.xml', 'Расходные материалы');
 
 /*РАЗДЕЛЫ
 	(1, 'Компьютеры и офисная техника'),
