@@ -73,9 +73,8 @@ function importXml(string $a): void {
 			if ($ins_name->execute()){ 						
 		
 				//вставка цены и типа цены товара					
-				$ins_price = $mysqli->prepare(	"INSERT INTO `a_price`(	`product_code`,
-																		`price_type`,
-																		`price`) VALUES (?, ?, ?)");  				
+				$ins_price = $mysqli->prepare(	"INSERT INTO `a_price`(`product_code`,`price_type`,`price`) 
+													VALUES (?, ?, ?)");  				
 				foreach ($product->Цена as $price) {
 					
 					$type = $price->attributes()->Тип;
@@ -92,10 +91,8 @@ function importXml(string $a): void {
 					} else echo("<pre>Не указан тип цены или цена для товара $name.");
 				}
 				//вставка свойств товара	
-				$ins_prop = $mysqli->prepare("INSERT INTO `a_property`(	`product_code`,
-																		`property_type`,
-																		`property_unit`,
-																		`property_value`) VALUES (?, ?, ?, ?)"); 				
+				$ins_prop = $mysqli->prepare("INSERT INTO `a_property`(`product_code`,`property_type`,`property_unit`,`property_value`) 
+												VALUES (?, ?, ?, ?)"); 				
 				
 				foreach ($product->Свойства->children() as $property) {
 					
@@ -117,8 +114,7 @@ function importXml(string $a): void {
 				}		
 				
 				//вставка разделов товара	
-				$ins_category = $mysqli->prepare("INSERT INTO `a_product_category`(	`product_code`,
-																					`category_id`) VALUES (?, ?)"); 					
+				$ins_category = $mysqli->prepare("INSERT INTO `a_product_category`(`product_code`,`category_id`) VALUES (?, ?)"); 					
 
 				foreach ($product->Разделы->children() as $value) {
 					
