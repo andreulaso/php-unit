@@ -52,13 +52,14 @@ function importXml(string $a): void {
 	if ($xml->Товар->count() === 0) throw new Exception("Не найдены товары");
 	
 	//подключение к базе данных
+	$mysqli = new mysqli('localhost', 'root', '140905', 'test_samson');
+
+	if ($mysqli->connect_errno) throw new Exception("Failed to connect:" . $mysqli->connect_error);
+
+	$mysqli->set_charset("utf8");
+
+	$ins_name = $mysqli->prepare("INSERT INTO `a_product`(`product_code`,`product_name`) VALUES (?, ?)");
 	
-	$con = mysqli_connect('localhost', 'root', '140905', 'test_samson');
-
-	if (mysqli_connect_errno($con)) throw new Exception("Failed to connect:" . mysqli_connect_error());
-
-	mysqli_set_charset($con, "utf8");
-
 	foreach ($xml->Товар as $product) {
 
 		$code = $product->attributes()->Код;
@@ -66,28 +67,36 @@ function importXml(string $a): void {
 		
 		if (isset($code, $name)){	
 
-			$sql = "INSERT INTO `a_product`(`product_code`,`product_name`) 
-					VALUES ('{$code}', '{$name}')";
-			
-			if (mysqli_query($con, $sql)){ 						
+			//вставка кода и названия товара
+			$ins_name->bind_param("is", $code, $name);
+
+			if ($ins_name->execute()){ 						
 		
+				//вставка цены и типа цены товара					
+				$ins_price = $mysqli->prepare(	"INSERT INTO `a_price`(	`product_code`,
+																		`price_type`,
+																		`price`) VALUES (?, ?, ?)");  				
 				foreach ($product->Цена as $price) {
 					
 					$type = $price->attributes()->Тип;
 					
 					if (isset($type) && !empty((string)$price)){
 
-						$sql = "INSERT INTO `a_price`(`product_code`,`price_type`,`price`) 
-								VALUES ('{$code}', '{$type}', '{$price}')";  
+						$ins_price->bind_param("isd", $code, $type, $price);
 						
-						if (!mysqli_query($con, $sql)){
+						if (!$ins_price->execute()){
 							
-							echo ("<pre>Не удалось добавить цену $type для товара $name. " . mysqli_error($con));
+							echo ("<pre>Не удалось добавить цену $type для товара $name. " . $mysqli->error);
 						}
 						
 					} else echo("<pre>Не указан тип цены или цена для товара $name.");
 				}
-
+				//вставка свойств товара	
+				$ins_prop = $mysqli->prepare("INSERT INTO `a_property`(	`product_code`,
+																		`property_type`,
+																		`property_unit`,
+																		`property_value`) VALUES (?, ?, ?, ?)"); 				
+				
 				foreach ($product->Свойства->children() as $property) {
 					
 					$property_type = $property->getName();
@@ -96,17 +105,20 @@ function importXml(string $a): void {
 					
 					if (isset($property_type) && !empty((string)$property)){
 
-						$sql = "INSERT INTO `a_property`(`product_code`,`property_type`,`property_unit`,`property_value`) 
-								VALUES ('{$code}', '{$property_type}', '{$property_unit}', '{$property}')";  
+						$ins_prop->bind_param("isss", $code, $property_type, $property_unit, $property);
 						
-						if (!mysqli_query($con, $sql)){
+						if (!$ins_prop->execute()){
 							
-							echo ("<pre>Не удалось добавить свойство $property_type для товара $name." . mysqli_error($con));
+							echo ("<pre>Не удалось добавить свойство $property_type для товара $name." . $mysqli->error);
 						}
 						
 					} else echo("<pre>Не удалось добавить свойства для товара $name.");	
 					
 				}		
+				
+				//вставка разделов товара	
+				$ins_category = $mysqli->prepare("INSERT INTO `a_product_category`(	`product_code`,
+																					`category_id`) VALUES (?, ?)"); 					
 
 				foreach ($product->Разделы->children() as $value) {
 					
@@ -114,34 +126,35 @@ function importXml(string $a): void {
 					
 					if (!empty($category)){
 
-						$sql = "SELECT `category_id` FROM `a_category` 
-								WHERE category_name = '{$category}' LIMIT 1"; 	
-
-						$result = mysqli_query($con, $sql);
+						//выборка id раздела
+						$ins_id = $mysqli->prepare("SELECT `category_id` FROM `a_category` WHERE category_name = ? LIMIT 1"); 
 						
-						if ($result){	
+						$ins_id->bind_param("s", $category); 
+
+						if ($ins_id->execute()){	
 							
-							$id = mysqli_fetch_array($result);
+							if ($result = $ins_id->get_result()){
+
+								if ($id = $result->fetch_assoc()){
+
+									$ins_category->bind_param("ii", $code, $id['category_id']); 
+
+									if (!$ins_category->execute()){
+										
+										echo ("<pre>Не удалось добавить раздел $category для товара $name." . $mysqli->error);
+									}
 							
-							if ($id){
-
-								$sql = "INSERT INTO `a_product_category`(`product_code`,`category_id`) 
-										VALUES ('{$code}', '{$id['category_id']}')";
-
-								if (!mysqli_query($con, $sql)){
-									
-									echo ("<pre>Не удалось добавить раздел $category для товара $name." . mysqli_error($con));
-								}
+								} else echo ("<pre>Раздел $category не найден. " . $mysqli->error);	
+							
+							} else echo ("Не удалось выполнить запрос для раздела $category. " . $mysqli->error);
 						
-							} else echo ("<pre>Раздел $category не найден. " . mysqli_error($con));	
-						
-						} else echo ("Не удалось выполнить запрос для раздела $category. " . mysqli_error($con));
+						} else echo ("Не удалось выполнить запрос для раздела $category. " . $mysqli->error);
 						
 					} else echo("<pre>Не удалось добавить раздел для товара $name.");										
 
 				}	
 			
-			} else echo("<pre>Не удалось добавить товар $name. " . mysqli_error($con));		
+			} else echo("<pre>Не удалось добавить товар $name. " . $mysqli->error);		
 		
 		} else echo("<pre>Не указан код или название товара");					
 	}	
@@ -271,6 +284,8 @@ function exportXml(string $a, string $b): void {
 	
 	} else throw new Exception("Не удалось выполнить запрос. " . mysqli_error($con));			
 }
+
+
 
 //importXml('2.xml');
 
