@@ -1,12 +1,25 @@
 <?php
 declare(strict_types=1);
 
-function convertString(string &$a, string $b): void {
+function convertString(string $a, string $b): string {
 
-	$a = preg_replace_callback('/'.$b.'/', function ($m) use (&$count) {
+	return preg_replace_callback('/'.$b.'/', function ($m) use (&$count) {
 		
-		$count++; return $count == 2 ? strrev($m[0]) : $m[0];
-	
+		$count++; 
+		
+		if ($count == 2){
+			
+			$str = '';
+			
+			for ($i = mb_strlen($m[0]); $i >= 0; $i--) {
+				
+				$str .= mb_substr($m[0], $i, 1);
+			}
+			
+			return $str;			
+
+		} else return $m[0];
+
 	}, $a, 2);	
 }
 
