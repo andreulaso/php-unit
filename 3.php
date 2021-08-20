@@ -36,7 +36,8 @@ class newBase
 	/**
 	* @param mixed $value
 	*/
-	public function setValue($value)
+	//public function setValue($value)
+	public function setValue($value): newBase	
 	{
 		$this->value = $value;
 		//
@@ -89,7 +90,8 @@ class newView extends newBase
 	/**
 	* @param mixed $value
 	*/
-	public function setValue($value)
+	//public function setValue($value)
+	public function setValue($value): newView
 	{
 		parent::setValue($value);
 		$this->setType();
@@ -97,16 +99,19 @@ class newView extends newBase
 		//
 		return $this;
 	}
-	public function setProperty($value)
+	//public function setProperty($value)
+	public function setProperty($value): newView
 	{
 		$this->property = $value;
 		return $this;
 	}
-	private function setType()
+	//private function setType()
+	private function setType(): void
 	{
 		$this->type = gettype($this->value);
 	}
-	private function setSize()
+	//private function setSize()
+	private function setSize(): void
 	{
 		//if (is_subclass_of($this->value, "Test3\newView")) {
 		if (is_subclass_of($this->value, 'Test3\newBase')) {			
@@ -148,7 +153,8 @@ class newView extends newBase
 	{
 		return ' size ' . $this->size . ';';
 	}
-	public function getInfo()
+	//public function getInfo()
+	public function getInfo(): void
 	{
 		try {
 			echo $this->getName()
@@ -168,6 +174,7 @@ class newView extends newBase
 		//if ($this->type == 'test') {
 		//$this->value = $this->value->getSave();
 		//}
+		//return parent::getSave() . serialize($this->property);		
 		return parent::getSave() . ':' . serialize($this->property);
 	}
 	/**
@@ -197,7 +204,7 @@ function gettype($value): string
 			if (strpos($type, 'Test3\newBase') !== false) {
 				return 'test';
 			}
-			//} while ($type = get_parent_class($type));
+		//} while ($type = get_parent_class($type));
 		} while ($type == get_parent_class($value));		
 	}
 	//return gettype($value);  
@@ -218,3 +225,17 @@ $save = $obj2->getSave();
 $obj3 = newView::load($save);
 
 var_dump($obj2->getSave() == $obj3->getSave());
+
+$obj4 = new newView('44444');
+$obj4->setValue($obj2);
+$obj4->setProperty('field');
+
+$save2 = $obj4->getSave();
+
+$obj5 = newView::load($save2);
+
+var_dump($obj4->getSave() == $obj5->getSave());
+
+var_dump($obj4);
+
+var_dump($obj5);
