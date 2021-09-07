@@ -87,31 +87,3 @@ function printTrapeze(array $a): string
     }
 	return $table .= '</table>';
 }
-
-abstract class BaseMath
-{
-    abstract protected function getValue();
-
-    public function exp1($a, $b, $c){
-		return $a * ($b ** $c);
-    }
-   
-    public function exp2($a, $b, $c){
-        return ($a / $b) ** $c;
-    }	
-}
-
-class F1  extends BaseMath
-{
-    private $a, $b, $c;
-	
-	public function __construct($a, $b, $c) {
-        $this->a = $a;
-        $this->b = $b;
-        $this->c = $c;		
-	}
-	
-    public function getValue() {
-	   return $this->exp1($this->a, $this->b, $this->c) + ((($this->a / $this->c) ** $this->b) % 3) ** min($this->a, $this->b, $this->c);
-    }
-}

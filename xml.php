@@ -1,46 +1,6 @@
 <?php
 declare(strict_types=1);
 
-function convertString(string $a, string $b): string {
-
-	return preg_replace_callback('/'.$b.'/', function ($m) use (&$count) {
-		
-		$count++; 
-		
-		if ($count == 2){
-			
-			$str = '';
-			
-			for ($i = mb_strlen($m[0]); $i >= 0; $i--) {
-				
-				$str .= mb_substr($m[0], $i, 1);
-			}
-			
-			return $str;			
-
-		} else return $m[0];
-
-	}, $a, 2);	
-}
-
-
-function mySortForKey(array &$a, string $b): void {
-
-	uksort($a, function($f, $s) use ($a, $b) {
-
-		if (isset($a[$f][$b]))
-		{
-			if (isset($a[$s][$b]))
-			{
-				return $a[$f][$b]-$a[$s][$b];
-			
-			} throw new Exception('Array['.($s).'] не содержит индекс '.$b);			
-		
-		} throw new Exception('Array['.$f.'}] не содержит индекс '.$b);
-	});
-}
-
-
 function importXml(string $a): void {
 	
 	if (!file_exists($a)) throw new InvalidArgumentException("<pre>Не удалось открыть файл $a.");	 
@@ -283,7 +243,7 @@ function exportXml(string $a, string $b): void {
 
 
 
-//importXml('2.xml');
+//importXml('import.xml');
 
 //exportXml('export.xml', 'Расходные материалы');
 
